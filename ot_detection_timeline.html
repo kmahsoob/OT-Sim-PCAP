@@ -1,0 +1,1525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OT Security Detection Timeline — Manufacturing Network</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&family=Exo+2:wght@300;400;600&display=swap');
+
+  :root {
+    --bg:         #080c12;
+    --bg2:        #0d1420;
+    --bg3:        #111a28;
+    --grid:       rgba(0,220,180,0.06);
+    --cyan:       #00dcc4;
+    --cyan-dim:   rgba(0,220,196,0.55);
+    --amber:      #ffb340;
+    --red:        #ff3f5b;
+    --red-dim:    rgba(255,63,91,0.18);
+    --green:      #39ff84;
+    --blue:       #3b9eff;
+    --purple:     #b06dff;
+    --text:       #c8d8e8;
+    --text-dim:   #6a8099;
+    --border:     rgba(0,220,196,0.18);
+    --border2:    rgba(0,220,196,0.08);
+    --crit:       #ff3f5b;
+    --high:       #ff8c42;
+    --med:        #ffde59;
+    --low:        #3b9eff;
+    --info:       #39ff84;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Exo 2', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 1000; pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent, transparent 2px,
+      rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px
+    );
+  }
+
+  /* Grid background */
+  body::after {
+    content: '';
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 0 32px 80px; }
+
+  /* ── HEADER ── */
+  header {
+    padding: 52px 0 40px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+
+  .header-top {
+    display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 24px;
+  }
+
+  .logo-block { display: flex; align-items: center; gap: 16px; }
+
+  .logo-icon {
+    width: 52px; height: 52px;
+    border: 1.5px solid var(--cyan);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    box-shadow: 0 0 16px rgba(0,220,196,0.25);
+  }
+
+  .logo-icon svg { width: 30px; height: 30px; }
+
+  h1 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1.1;
+    color: #fff;
+  }
+
+  h1 span { color: var(--cyan); }
+
+  .meta-block {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+  }
+
+  .badge {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    padding: 4px 10px;
+    border-radius: 2px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .badge-red   { background: rgba(255,63,91,0.15);  color: var(--red);   border: 1px solid rgba(255,63,91,0.3);  }
+  .badge-cyan  { background: rgba(0,220,196,0.1);   color: var(--cyan);  border: 1px solid var(--border); }
+  .badge-amber { background: rgba(255,179,64,0.12); color: var(--amber); border: 1px solid rgba(255,179,64,0.3); }
+  .badge-blue  { background: rgba(59,158,255,0.12); color: var(--blue);  border: 1px solid rgba(59,158,255,0.3); }
+  .badge-green { background: rgba(57,255,132,0.1);  color: var(--green); border: 1px solid rgba(57,255,132,0.25); }
+  .badge-purple{ background: rgba(176,109,255,0.1); color: var(--purple);border: 1px solid rgba(176,109,255,0.3); }
+
+  .subtitle {
+    margin-top: 20px;
+    font-size: 0.95rem;
+    color: var(--text-dim);
+    max-width: 680px;
+    line-height: 1.7;
+  }
+
+  /* ── STAT CARDS ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+    margin-bottom: 52px;
+  }
+
+  .stat-card {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 20px 18px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  }
+
+  .stat-card.crit::before { background: var(--crit); }
+  .stat-card.high::before { background: var(--high); }
+  .stat-card.med::before  { background: var(--med); }
+  .stat-card.info::before { background: var(--info); }
+  .stat-card.total::before{ background: var(--cyan); }
+
+  .stat-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .stat-val {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 2.4rem;
+    font-weight: 700;
+    line-height: 1;
+    color: #fff;
+  }
+
+  .stat-card.crit .stat-val { color: var(--crit); }
+  .stat-card.high .stat-val { color: var(--high); }
+  .stat-card.med .stat-val  { color: var(--med); }
+
+  .stat-sub {
+    margin-top: 4px;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+  }
+
+  /* ── TOPOLOGY ── */
+  .section-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 28px;
+  }
+
+  .section-header h2 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--cyan);
+  }
+
+  .section-line {
+    flex: 1; height: 1px;
+    background: linear-gradient(90deg, var(--border) 0%, transparent 100%);
+  }
+
+  .topo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 52px;
+  }
+
+  .topo-card {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+  }
+
+  .topo-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+    box-shadow: 0 0 8px currentColor;
+  }
+
+  .topo-card .info { flex: 1; }
+  .topo-card .device-name {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.78rem;
+    color: #fff;
+    letter-spacing: 0.04em;
+  }
+  .topo-card .device-sub {
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+  .topo-card .device-ip {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+  }
+
+  /* ── TIMELINE ── */
+  .timeline { position: relative; margin-bottom: 60px; }
+
+  .timeline::before {
+    content: '';
+    position: absolute; left: 180px; top: 0; bottom: 0; width: 1px;
+    background: linear-gradient(180deg, transparent, var(--border) 5%, var(--border) 95%, transparent);
+  }
+
+  .day-header {
+    display: flex; align-items: center; gap: 0;
+    margin: 40px 0 24px;
+    position: relative;
+  }
+
+  .day-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    width: 160px;
+    flex-shrink: 0;
+    padding-right: 12px;
+    text-align: right;
+  }
+
+  .day-line {
+    flex: 1; height: 1px;
+    margin-left: 20px;
+    background: linear-gradient(90deg, var(--cyan-dim), transparent);
+  }
+
+  .day-dot {
+    position: absolute; left: 173px; top: 50%;
+    transform: translateY(-50%);
+    width: 16px; height: 16px;
+    border: 2px solid var(--cyan);
+    border-radius: 50%;
+    background: var(--bg);
+    box-shadow: 0 0 12px var(--cyan);
+  }
+
+  .event {
+    display: flex; align-items: flex-start; gap: 0;
+    margin-bottom: 20px;
+    position: relative;
+    animation: fadeIn 0.4s ease forwards;
+    opacity: 0;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  .event:nth-child(1)  { animation-delay: 0.05s; }
+  .event:nth-child(2)  { animation-delay: 0.10s; }
+  .event:nth-child(3)  { animation-delay: 0.15s; }
+  .event:nth-child(4)  { animation-delay: 0.20s; }
+  .event:nth-child(5)  { animation-delay: 0.25s; }
+  .event:nth-child(6)  { animation-delay: 0.30s; }
+  .event:nth-child(7)  { animation-delay: 0.35s; }
+  .event:nth-child(8)  { animation-delay: 0.40s; }
+  .event:nth-child(9)  { animation-delay: 0.45s; }
+  .event:nth-child(10) { animation-delay: 0.50s; }
+
+  .event-time {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    width: 160px;
+    flex-shrink: 0;
+    text-align: right;
+    padding-right: 0;
+    padding-top: 14px;
+    line-height: 1.4;
+  }
+
+  .event-time .day-stamp {
+    display: block;
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    opacity: 0.6;
+  }
+
+  .event-connector {
+    width: 40px; flex-shrink: 0;
+    display: flex; align-items: flex-start;
+    padding-top: 18px;
+    justify-content: center;
+    position: relative;
+  }
+
+  .event-connector::before {
+    content: '';
+    position: absolute; top: 27px; left: 50%; transform: translateX(-50%);
+    width: 8px; height: 8px; border-radius: 50%;
+    border: 1.5px solid currentColor;
+    background: var(--bg);
+  }
+
+  .event.sev-critical .event-connector { color: var(--crit); }
+  .event.sev-high     .event-connector { color: var(--high); }
+  .event.sev-medium   .event-connector { color: var(--med); }
+  .event.sev-low      .event-connector { color: var(--blue); }
+  .event.sev-info     .event-connector { color: var(--info); }
+
+  .event-body {
+    flex: 1;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 14px 18px;
+    position: relative;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .event:hover .event-body {
+    border-color: var(--border);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+
+  .event.sev-critical .event-body { border-left: 3px solid var(--crit); }
+  .event.sev-high     .event-body { border-left: 3px solid var(--high); }
+  .event.sev-medium   .event-body { border-left: 3px solid var(--med); }
+  .event.sev-low      .event-body { border-left: 3px solid var(--blue); }
+  .event.sev-info     .event-body { border-left: 3px solid var(--info); }
+
+  .event-top {
+    display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+
+  .event-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #fff;
+    flex: 1;
+    letter-spacing: 0.02em;
+  }
+
+  .sev-badge {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    padding: 3px 8px;
+    border-radius: 2px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+
+  .sev-CRITICAL { background: rgba(255,63,91,0.2);  color: var(--crit); border: 1px solid rgba(255,63,91,0.4); }
+  .sev-HIGH     { background: rgba(255,140,66,0.15); color: var(--high); border: 1px solid rgba(255,140,66,0.35); }
+  .sev-MEDIUM   { background: rgba(255,222,89,0.12); color: var(--med);  border: 1px solid rgba(255,222,89,0.3); }
+  .sev-LOW      { background: rgba(59,158,255,0.12); color: var(--blue); border: 1px solid rgba(59,158,255,0.3); }
+  .sev-INFO     { background: rgba(57,255,132,0.08); color: var(--green);border: 1px solid rgba(57,255,132,0.25); }
+
+  .event-desc {
+    font-size: 0.85rem;
+    color: var(--text);
+    line-height: 1.6;
+    margin-bottom: 10px;
+  }
+
+  .event-meta {
+    display: flex; flex-wrap: wrap; gap: 8px;
+  }
+
+  .meta-tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    padding: 3px 8px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+  }
+
+  .meta-tag.proto  { color: var(--cyan);   border-color: rgba(0,220,196,0.2); }
+  .meta-tag.tool   { color: var(--purple); border-color: rgba(176,109,255,0.2); }
+  .meta-tag.src    { color: var(--amber);  border-color: rgba(255,179,64,0.2); }
+  .meta-tag.target { color: var(--blue);   border-color: rgba(59,158,255,0.2); }
+  .meta-tag.mitre  { color: var(--red);    border-color: rgba(255,63,91,0.2); }
+
+  /* ICS Kill Chain label */
+  .event-kc {
+    position: absolute; right: 14px; top: 14px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    opacity: 0.7;
+  }
+
+  /* ── PROTOCOL TABLE ── */
+  .proto-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 52px;
+    font-size: 0.85rem;
+  }
+
+  .proto-table th {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    background: var(--bg3);
+  }
+
+  .proto-table td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border2);
+    color: var(--text);
+    vertical-align: top;
+    font-size: 0.82rem;
+  }
+
+  .proto-table tr:hover td { background: rgba(0,220,196,0.03); }
+
+  .mono { font-family: 'Share Tech Mono', monospace; font-size: 0.75rem; }
+
+  /* ── NETWORK MAP LEGEND ── */
+  .legend-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+    margin-bottom: 52px;
+  }
+
+  .legend-card {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 16px 18px;
+  }
+
+  .legend-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    margin-bottom: 10px;
+  }
+
+  .legend-items { list-style: none; }
+  .legend-items li {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    padding: 3px 0;
+    display: flex; gap: 8px;
+  }
+  .legend-items li::before { content: '›'; color: var(--cyan); flex-shrink: 0; }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border2);
+    padding-top: 32px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    display: flex; gap: 24px; flex-wrap: wrap; justify-content: space-between;
+  }
+
+  /* ── FILTER BUTTONS ── */
+  .filter-row {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-bottom: 28px;
+    align-items: center;
+  }
+
+  .filter-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-right: 4px;
+  }
+
+  .filter-btn {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.68rem;
+    padding: 5px 12px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    transition: all 0.15s;
+  }
+
+  .filter-btn:hover,
+  .filter-btn.active {
+    background: rgba(0,220,196,0.1);
+    color: var(--cyan);
+    border-color: var(--cyan);
+  }
+
+  .filter-btn.f-crit.active  { background: rgba(255,63,91,0.1); color: var(--crit); border-color: var(--crit); }
+  .filter-btn.f-high.active  { background: rgba(255,140,66,0.1); color: var(--high); border-color: var(--high); }
+  .filter-btn.f-med.active   { background: rgba(255,222,89,0.1); color: var(--med); border-color: var(--med); }
+
+  .event.hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- HEADER -->
+<header>
+  <div class="header-top">
+    <div class="logo-block">
+      <div class="logo-icon">
+        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2" y="14" width="28" height="4" rx="1" fill="none" stroke="#00dcc4" stroke-width="1.5"/>
+          <circle cx="8"  cy="16" r="3" fill="none" stroke="#00dcc4" stroke-width="1.5"/>
+          <circle cx="16" cy="16" r="3" fill="none" stroke="#ffb340" stroke-width="1.5"/>
+          <circle cx="24" cy="16" r="3" fill="none" stroke="#ff3f5b" stroke-width="1.5"/>
+          <path d="M8 13V6M8 26v-7M16 13V6M24 13V6M24 26v-7" stroke="#00dcc4" stroke-width="1" opacity="0.5"/>
+        </svg>
+      </div>
+      <div>
+        <h1>OT Security <span>Detection Timeline</span></h1>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:var(--text-dim);margin-top:4px;letter-spacing:0.08em;">
+          MANUFACTURING NETWORK — 3-DAY CAPTURE ANALYSIS
+        </div>
+      </div>
+    </div>
+    <div class="meta-block">
+      <span class="badge badge-red">TLP:AMBER</span>
+      <span class="badge badge-cyan">PCAP: OT_MFG_3DAY.PCAP</span>
+      <span class="badge badge-amber">40 PLCs · 10 HMIs · 4 DCS</span>
+      <span class="badge badge-blue">DURATION: 72 HOURS</span>
+    </div>
+  </div>
+  <p class="subtitle">
+    Comprehensive detection event timeline for a simulated 3–5 day OT manufacturing network capture.
+    Events are mapped to Claroty xDome / Armis Centrix detection categories, ICS ATT&amp;CK techniques,
+    and NERC CIP / IEC 62443 compliance triggers. Capture generated at ~25 Mbps average throughput
+    across 40 PLCs, 10 HMIs, 4 DCS controllers, and supporting infrastructure.
+  </p>
+</header>
+
+<!-- STAT CARDS -->
+<div class="stats-row">
+  <div class="stat-card total">
+    <div class="stat-label">Total Events</div>
+    <div class="stat-val">29</div>
+    <div class="stat-sub">across 3 days</div>
+  </div>
+  <div class="stat-card crit">
+    <div class="stat-label">Critical</div>
+    <div class="stat-val">6</div>
+    <div class="stat-sub">immediate response</div>
+  </div>
+  <div class="stat-card high">
+    <div class="stat-label">High</div>
+    <div class="stat-val">11</div>
+    <div class="stat-sub">investigate &lt;4h</div>
+  </div>
+  <div class="stat-card med">
+    <div class="stat-label">Medium</div>
+    <div class="stat-val">8</div>
+    <div class="stat-sub">next business day</div>
+  </div>
+  <div class="stat-card info">
+    <div class="stat-label">Low / Info</div>
+    <div class="stat-val">4</div>
+    <div class="stat-sub">log &amp; monitor</div>
+  </div>
+  <div class="stat-card total">
+    <div class="stat-label">MITRE Techniques</div>
+    <div class="stat-val">14</div>
+    <div class="stat-sub">ICS ATT&amp;CK mapped</div>
+  </div>
+  <div class="stat-card total">
+    <div class="stat-label">Target BW</div>
+    <div class="stat-val">~25</div>
+    <div class="stat-sub">Mbps average</div>
+  </div>
+  <div class="stat-card total">
+    <div class="stat-label">Est. PCAP Size</div>
+    <div class="stat-val">~800</div>
+    <div class="stat-sub">GB over 3 days</div>
+  </div>
+</div>
+
+<!-- TOPOLOGY -->
+<div class="section-header">
+  <h2>Network Topology</h2>
+  <div class="section-line"></div>
+</div>
+<div class="topo-grid">
+  <div class="topo-card"><div class="topo-dot" style="color:#00dcc4;background:#00dcc4"></div><div class="info"><div class="device-name">PLC-01 – PLC-40</div><div class="device-sub">Allen-Bradley · Siemens · Schneider · Rockwell · Omron · Mitsubishi</div><div class="device-ip">192.168.10.11 – .50</div></div></div>
+  <div class="topo-card"><div class="topo-dot" style="color:#3b9eff;background:#3b9eff"></div><div class="info"><div class="device-name">HMI-01 – HMI-10</div><div class="device-sub">Wonderware · FactoryTalk · iFIX · Ignition · WinCC</div><div class="device-ip">192.168.10.101 – .110</div></div></div>
+  <div class="topo-card"><div class="topo-dot" style="color:#b06dff;background:#b06dff"></div><div class="info"><div class="device-name">DCS-01 – DCS-04</div><div class="device-sub">Honeywell · Emerson · ABB · Yokogawa</div><div class="device-ip">192.168.10.121 – .124</div></div></div>
+  <div class="topo-card"><div class="topo-dot" style="color:#ffb340;background:#ffb340"></div><div class="info"><div class="device-name">ENG-WS1 / ENG-WS2</div><div class="device-sub">Dell / HP Engineering Workstations</div><div class="device-ip">192.168.10.200 – .201</div></div></div>
+  <div class="topo-card"><div class="topo-dot" style="color:#39ff84;background:#39ff84"></div><div class="info"><div class="device-name">Historian-PI / Historian-AV</div><div class="device-sub">OSIsoft PI · AVEVA Historian</div><div class="device-ip">192.168.10.210 – .211</div></div></div>
+  <div class="topo-card"><div class="topo-dot" style="color:#ff8c42;background:#ff8c42"></div><div class="info"><div class="device-name">SCADA-SRV / JUMP-SRV / OT-FW</div><div class="device-sub">Inductive Ignition · Jump Server · Fortinet FW</div><div class="device-ip">192.168.10.220 / .230 / .1</div></div></div>
+</div>
+
+<!-- PROTOCOL TABLE -->
+<div class="section-header">
+  <h2>Protocol Distribution</h2>
+  <div class="section-line"></div>
+</div>
+<table class="proto-table" style="margin-bottom:52px">
+  <thead>
+    <tr>
+      <th>Protocol</th>
+      <th>Port</th>
+      <th>Direction</th>
+      <th>Poll Interval</th>
+      <th>Est. Volume</th>
+      <th>Alert Triggers</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>Modbus/TCP</td><td class="mono">502/TCP</td><td>HMI+SCADA → all 40 PLCs</td><td>2s per pair</td><td>~18 Mbps</td><td>FC43 scan, FC16 reserved write, FC01 sweep, bad coil value</td></tr>
+    <tr><td>EtherNet/IP (CIP)</td><td class="mono">44818/TCP</td><td>HMI → AB/Rockwell PLCs (×20)</td><td>5s per pair</td><td>~4 Mbps</td><td>Auth failures, unexpected session establishment</td></tr>
+    <tr><td>S7comm (TPKT)</td><td class="mono">102/TCP</td><td>HMI → Siemens PLCs (×10)</td><td>3s per pair</td><td>~2 Mbps</td><td>STOP CPU command, unauthorized program access</td></tr>
+    <tr><td>DNP3/TCP</td><td class="mono">20000/TCP</td><td>DCS-01–04 → SCADA</td><td>10s</td><td>~0.3 Mbps</td><td>Unsolicited flood, cold restart, relay output change</td></tr>
+    <tr><td>OPC-UA</td><td class="mono">4840/TCP</td><td>Historians → all 40 PLCs</td><td>30s per pair</td><td>~0.5 Mbps</td><td>Rogue session from unexpected IP</td></tr>
+    <tr><td>PROFINET RT</td><td class="mono">0x8892 L2</td><td>Siemens PLCs → remote I/O</td><td>1s cyclic</td><td>~0.4 Mbps</td><td>Frame ID anomaly, missing cyclic data</td></tr>
+    <tr><td>ICMP</td><td class="mono">proto 1</td><td>SCADA ↔ all PLCs</td><td>30s</td><td>&lt;0.1 Mbps</td><td>ICMP flood from rogue IP, unexpected source</td></tr>
+    <tr><td>ARP</td><td class="mono">0x0806 L2</td><td>All devices → gateway</td><td>120s</td><td>&lt;0.1 Mbps</td><td>ARP spoof, gratuitous ARP, IP conflict</td></tr>
+    <tr><td>Syslog UDP</td><td class="mono">514/UDP</td><td>Devices → SCADA</td><td>60s</td><td>&lt;0.1 Mbps</td><td>Link-down events, watchdog resets</td></tr>
+    <tr><td>NTP</td><td class="mono">123/UDP</td><td>Devices → OT-FW gateway</td><td>~1000s</td><td>&lt;0.1 Mbps</td><td>NTP amplification flood</td></tr>
+    <tr><td>BACnet</td><td class="mono">47808/UDP</td><td>PLCs → 192.168.10.255 bcast</td><td>anomaly only</td><td>anomaly burst</td><td>Who-Is broadcast flood (cross-segment recon)</td></tr>
+    <tr><td>SMB2</td><td class="mono">445/TCP</td><td>ENG-WS → Historian</td><td>anomaly only</td><td>anomaly only</td><td>Lateral movement, unexpected file share access</td></tr>
+    <tr><td>RDP</td><td class="mono">3389/TCP</td><td>ENG-WS → Jump Server</td><td>anomaly only</td><td>anomaly burst</td><td>Brute force authentication attempts</td></tr>
+  </tbody>
+</table>
+
+<!-- FILTER -->
+<div class="section-header">
+  <h2>Detection Event Timeline</h2>
+  <div class="section-line"></div>
+</div>
+
+<div class="filter-row">
+  <span class="filter-label">Filter:</span>
+  <button class="filter-btn active" onclick="filterEvents('all',this)">All Events</button>
+  <button class="filter-btn f-crit" onclick="filterEvents('critical',this)">Critical</button>
+  <button class="filter-btn f-high" onclick="filterEvents('high',this)">High</button>
+  <button class="filter-btn f-med"  onclick="filterEvents('medium',this)">Medium</button>
+  <button class="filter-btn" onclick="filterEvents('low',this)">Low / Info</button>
+  <button class="filter-btn" onclick="filterEvents('day1',this)">Day 1</button>
+  <button class="filter-btn" onclick="filterEvents('day2',this)">Day 2</button>
+  <button class="filter-btn" onclick="filterEvents('day3',this)">Day 3</button>
+</div>
+
+<!-- TIMELINE EVENTS -->
+<div class="timeline" id="timeline">
+
+  <!-- ═══ DAY 1 ═══ -->
+  <div class="day-header">
+    <div class="day-label">Day 1</div>
+    <div class="day-dot"></div>
+    <div class="day-line"></div>
+    <span class="badge badge-red" style="margin-left:16px;white-space:nowrap;">9 Events</span>
+  </div>
+
+  <div class="event sev-high" data-sev="high" data-day="day1">
+    <div class="event-time"><span class="day-stamp">Day 1</span>T+00:30<br>02024-03-15 00:30</div>
+    <div class="event-connector"></div>
+    <div class="event-body">
+      <div class="event-kc">ICS Kill Chain: Reconnaissance</div>
+      <div class="event-top">
+        <div class="event-title">ARP Cache Poisoning — Rogue MAC Claiming PLC-01 IP</div>
+        <span class="badge sev-badge sev-HIGH">HIGH</span>
+      </div>
+      <div class="event-desc">
+        Rogue MAC <code>00:ba:d0:ca:fe:01</code> sends gratuitous ARP replies to 8 network devices claiming to own <code>192.168.10.11</code> (PLC-01). Classic ARP spoofing pattern consistent with MITM positioning or reconnaissance. Claroty detects via duplicate IP-MAC binding; Armis flags as unauthorized identity claim on known OT asset.
+      </div>
+      <div class="event-meta">
+        <span class="meta-tag proto">ARP / L2</span>
+        <span class="meta-tag src">SRC: 00:ba:d0:ca:fe:01 (rogue)</span>
+        <span class="meta-tag target">TGT: PLC-01 (192.168.10.11)</span>
+        <span class="meta-tag tool">Claroty: Duplicate IP</span>
+        <span class="meta-tag tool">Armis: ARP Spoof Alert</span>
+        <span class="meta-tag mitre">T0859 Valid Accounts</span>
+        <span class="meta-tag mitre">IEC 62443: SR 1.1</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="event sev-high" data-sev="high" data-day="day1">
+    <div class="event-time"><span class="day-stamp">Day 1</span>T+02:00<br>2024-03-15 02:00</div>
+    <div class="event-connector"></div>
+    <div class="event-body">
+      <div class="event-kc">ICS Kill Chain: Evasion / Availability</div>
+      <div class="event-top">
+        <div class="event-title">PLC-07 Watchdog Timeout — 9-Minute Communication Gap</div>
+        <span class="badge sev-badge sev-HIGH">HIGH</span>
+      </div>
+      <div class="event-desc">
+        PLC-07 (Allen-Bradley, 192.168.10.17) sends TCP RST to HMI-01 on port 502, then becomes completely silent for 9m 14s. Syslog emits WATCHDOG TIMEOUT. Device returns with gratuitous ARP and reconnects cleanly. Pattern consistent with unexpected PLC restart, power fluctuation, or deliberate process disruption. All HMI polling sessions fail during gap.
+      </div>
+      <div class="event-meta">
+        <span class="meta-tag proto">Modbus/TCP</span>
+        <span class="meta-tag src">SRC: PLC-07 (192.168.10.17)</span>
+        <span class="meta-tag tool">Claroty: Device Unavailability</span>
+        <span class="meta-tag tool">Armis: OT Asset Offline</span>
+        <span class="meta-tag mitre">T0816 Device Restart/Shutdown</span>
+        <span class="meta-tag mitre">NERC CIP-007</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="event sev-medium" data-sev="medium" data-day="day1">
+    <div class="event-time"><span class="day-stamp">Day 1</span>T+04:15<br>2024-03-15 04:15</div>
+    <div class="event-connector"></div>
+    <div class="event-body">
+      <div class="event-kc">ICS Kill Chain: Reconnaissance</div>
+      <div class="event-top">
+        <div class="event-title">Modbus FC43 Device ID Enumeration Scan — All 40 PLCs</div>
+        <span class="badge sev-badge sev-MEDIUM">MEDIUM</span>
+      </div>
+      <div class="event-desc">
+        Engineering workstation ENG-WS1 issues Modbus Function Code 43 (Read Device Identification, sub-function 14) against all 40 PLCs sequentially. This queries vendor name, product model, and firmware version. While FC43 is a valid diagnostic, scanning all PLCs at 04:15 outside maintenance windows is anomalous. Claroty flags as unusual diagnostic activity; Armis correlates with after-hours access.
+      </div>
+      <div class="event-meta">
+        <span class="meta-tag proto">Modbus/TCP FC43</span>
+        <span class="meta-tag src">SRC: ENG-WS1 (192.168.10.200)</span>
+        <span class="meta-tag target">TGT: All 40 PLCs</span>
+        <span class="meta-tag tool">Claroty: Protocol Anomaly</span>
+        <span class="meta-tag tool">Armis: Unusual Diagnostic</span>
+        <span class="meta-tag mitre">T0846 Remote System Discovery</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="event sev-high" data-sev="high" data-day="day1">
+    <div class="event-time"><span class="day-stamp">Day 1</span>T+06:00<br>2024-03-15 06:00</div>
+    <div class="event-connector"></div>
+    <div class="event-body">
+      <div class="event-kc">ICS Kill Chain: Attack / Impair</div>
+      <div class="event-top">
+        <div class="event-title">DNP3 Unsolicited Response Flood — DCS-01 → SCADA</div>
+        <span class="badge sev-badge sev-HIGH">HIGH</span>
+      </div>
+      <div class="event-desc">
+        DCS-01 (Honeywell, 192.168.10.121) sends 80 back-to-back DNP3 unsolicited responses (function code 0x82) to the SCADA server within ~12 seconds, 26× the normal polling rate. This flood pattern can overwhelm SCADA processing queues, cause missed setpoint acknowledgments, and trigger false process alarms. Claroty detects via DNP3 rate anomaly; Armis flags abnormal DCS behavior profile deviation.
+      </div>
+      <div class="event-meta">
+        <span class="meta-tag proto">DNP3/TCP FC0x82</span>
+        <span class="meta-tag src">SRC: DCS-01 (192.168.10.121)</span>
+        <span class="meta-tag target">TGT: SCADA-SRV (.220)</span>
+        <span class="meta-tag tool">Claroty: DNP3 Rate Anomaly</span>
+        <span class="meta-tag tool">Armis: DCS Behavior Deviation</span>
+        <span class="meta-tag mitre">T0814 Denial of Service</span>
+        <span class="meta-tag mitre">IEC 62443: SR 7.1</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="event sev-critical" data-sev="critical" data-day="day1">
+    <div class="event-time"><span class="day-stamp">Day 1</span>T+08:30<br>2024-03-15 08:30</div>
+    <div class="event-connector"></div>
+    <div class="event-body">
+      <div class="event-kc">ICS Kill Chain: Attack / Modify</div>
+      <div class="event-top">
+        <div class="event-title">Modbus FC16 Write to Reserved Firmware Address Space — PLC-12</div>
+        <span class="badge sev-badge sev-CRITICAL">CRITICAL</span>
+      </div>
+      <div class="event-desc">
+        ENG-WS1 attempts a Modbus Function Code 16 (Write Multiple Registers) to address <code>0x9000</code> on PLC-12 (Schneider, 192.168.10.22), a reserved address range associated with firmware configuration and bootloader regions. PLC-12 responds with Modbus Exception Code 2 (Illegal Data Address). The write payload contains values <code>0xDEAD, 0xBEEF, 0xCAFE, 0xBABE, 0xF00D, 0xACDC</code> — a signature consistent with researcher or attacker tooling. Claroty issues immediate CRITICAL firmware tampering alert.
+      </div>
+      <div class="event-meta">
+        <span class="meta-tag proto">Modbus/TCP FC16</span>
+        <span class="meta-tag src">SRC: ENG-WS1 (192.168.10.200)</span>
+        <span class="meta-tag target">TGT: PLC-12 (192.168.10.22) @ 0x9000</span>
+        <span class="meta-tag tool">Claroty: Firmware Tampering</span>
+        <span class="meta-tag tool">Armis: Unauthorized Write</span>
+        <span class="meta-tag mitre">T0839 Module Firmware</span>
+        <span class="meta-tag mitre">NERC CIP-010</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="event sev-medium" data-sev="medium" data-day="day1">
+    <div class="event-time"><span class="day-stamp">Day 1</span>T+10:00<br>2024-03-15 10:00</div>
+    <div class="event-connector"></div>
+    <div class="event-body">
+      <div class="event-kc">ICS Kill Chain: Lateral Movement</div>
+      <div class="event-top">
+        <div class="event-title">PLC-to-PLC Lateral Modbus — PLC-03 Reading and Writing PLC-18</div>
+        <span class="badge sev-badge sev-MEDIUM">MEDIUM</span>
+      </div>
+      <div class="event-desc">
+        PLC-03 (Siemens, 192.168.10.13) establishes a direct Modbus/TCP connection to PLC-18 (Rockwell, 192.168.10.28) — a peer-to-peer OT communication that is highly abnormal in most manufacturing topologies where PLCs only communicate with HMIs and SCADA. PLC-03 executes both FC3 (read holding registers) and FC16 (write multiple registers). Claroty detects via learned baseline violation; Armis flags cross-device type communication anomaly.
+      </div>
+      <div class="event-meta">
+        <span class="meta-tag proto">Modbus/TCP FC3+FC16</span>
+        <span class="meta-tag src">SRC: PLC-03 (192.168.10.13)</span>
+        <span class="meta-tag target">TGT: PLC-18 (192.168.10.28)</span>
+        <span class="meta-tag tool">Claroty: Baseline Violation</span>
+        <span class="meta-tag tool">Armis: East-West Anomaly</span>
+        <span class="meta-tag mitre">T0812 Default Credentials</span>
+        <span class="meta-tag mitre">T0849 Masquerading</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="event sev-medium" data-sev="medium" data-day="day1">
+    <div class="event-time"><span class="day-stamp">Day 1</span>T+14:00<br>2024-03-15 14:00</div>
+    <div class="event-connector"></div>
+    <div class="event-body">
+      <div class="event-kc">ICS Kill Chain: Impair / Disruption</div>
+      <div class="event-top">
+        <div class="event-title">Layer-2 Broadcast Storm — 300-Frame Burst from PLC-05</div>
+        <span class="badge sev-badge sev-MEDIUM">MEDIUM</span>
+      </div>
+      <div class="event-desc">
+        PLC-05 (Schneider, 192.168.10.15) emits 300 Ethernet broadcast frames to <code>ff:ff:ff:ff:ff:ff</code> in rapid succession over ~2 seconds. This pattern is consistent with a spanning-tree loop artifact, firmware fault, or a fabricated broadcast storm. The burst saturates shared collision domain segments and causes retransmit storms on Modbus polling loops. Claroty detects via L2 traffic anomaly; Armis flags abnormal broadcast rate.
+      </div>
+      <div class="event-meta">
+        <span class="meta-tag proto">Ethernet L2 Broadcast</span>
+        <span class="meta-tag src">SRC: PLC-05 (192.168.10.15)</span>
+        <span class="meta-tag target">TGT: Broadcast domain</span>
+        <span class="meta-tag tool">Claroty: Network Anomaly</span>
+        <span class="meta-tag tool">Armis: Broadcast Storm</span>
+        <span class="meta-tag mitre">T0814 Denial of Service</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="event sev-high" data-sev="high" data-day="day1">
+    <div class="event-time"><span class="day-stamp">Day 1</span>T+18:00<br>2024-03-15 18:00</div>
+    <div class="event-connector"></div>
+    <div class="event-body">
+      <div class="event-kc">ICS Kill Chain: Attack / DoS</div>
+      <div class="event-top">
+        <div class="event-title">ICMP Flood — Rogue 10.99.99.1 Targeting SCADA Server (150 Packets)</div>
+        <span class="badge sev-badge sev-HIGH">HIGH</span>
+      </div>
+      <div class="event-desc">
+        IP address <code>10.99.99.1</code> (outside the OT segment, unexpected source) sends 150 ICMP Echo Request packets to SCADA-SRV (192.168.10.220) in under 30 seconds. MAC <code>00:de:ad:be:ef:ff</code> does not appear in the ARP table. This constitutes an unsanctioned external host pinging the SCADA server — indicative of lateral movement from an IT-OT boundary breach or rogue device on a trunk port.
+      </div>
+      <div class="event-meta">
+        <span class="meta-tag proto">ICMP Echo Request</span>
+        <span class="meta-tag src">SRC: 10.99.99.1 (ROGUE)</span>
+        <span class="meta-tag target">TGT: SCADA-SRV (192.168.10.220)</span>
+        <span class="meta-tag tool">Claroty: Rogue Host Alert</span>
+        <span class="meta-tag tool">Armis: Unknown Device</span>
+        <span class="meta-tag mitre">T0866 Exploitation of Remote Services</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="event sev-high" data-sev="high" data-day="day1">
+    <div class="event-time"><span class="day-stamp">Day 1</span>T+20:30<br>2024-03-15 20:30</div>
+    <div class="event-connector"></div>
+    <div class="event-body">
+      <div class="event-kc">ICS Kill Chain: Initial Access</div>
+      <div class="event-top">
+        <div class="event-title">HMI-03 Authentication Failure Storm — 25 Failed EtherNet/IP Sessions</div>
+        <span class="badge sev-badge sev-HIGH">HIGH</span>
+      </div>
+      <div class="event-desc">
+        ENG-WS1 (192.168.10.200) attempts 25 sequential TCP connections to HMI-03 on port 44818 (EtherNet/IP / FactoryTalk), each resulting in a malformed credential exchange followed by a TCP RST from HMI-03. The connection cadence (1–4 seconds between attempts) and identical malformed payload pattern suggest automated credential stuffing or brute-force tooling targeting the HMI session layer.
+      </div>
+      <div class="event-meta">
+        <span class="meta-tag proto">EtherNet/IP TCP:44818</span>
+        <span class="meta-tag src">SRC: ENG-WS1 (192.168.10.200)</span>
+        <span class="meta-tag target">TGT: HMI-03 (192.168.10.103)</span>
+        <span class="meta-tag tool">Claroty: Credential Attack</span>
+        <span class="meta-tag tool">Armis: Brute Force</span>
+        <span class="meta-tag mitre">T0859 Valid Accounts</span>
+        <span class="meta-tag mitre">NERC CIP-007 R5</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="event sev-high" data-sev="high" data-day="day1">
+    <div class="event-time"><span class="day-stamp">Day 1</span>T+22:00<br>2024-03-15 22:00</div>
+    <div class="event-connector"></div>
+    <div class="event-body">
+      <div class="event-kc">ICS Kill Chain: Evasion</div>
+      <div class="event-top">
+        <div class="event-title">PLC-22 Disconnect — 8-Minute Silence Window → Gratuitous ARP Reconnect</div>
+        <span class="badge sev-badge sev-HIGH">HIGH</span>
+      </div>
+      <div class="event-desc">
+        PLC-22 (Omron, 192.168.10.32) abruptly terminates all TCP sessions and enters an 8-minute unresponsive period. Syslog event from PLC-22: "WATCHDOG TIMEOUT – link down". Device returns with gratuitous ARP broadcast and re-establishes Modbus polling. The reconnection fingerprint differs slightly from the original session (different starting ISN range). Two disconnects in one day across different PLCs may indicate coordinated testing or instability.
+      </div>
+      <div class="event-meta">
+        <span class="meta-tag proto">Modbus/TCP + ARP</span>
+        <span class="meta-tag src">PLC-22 (192.168.10.32)</span>
+        <span class="meta-tag tool">Claroty: Device Unavailability</span>
+        <span class="meta-tag tool">Armis: OT Asset Offline</span>
+        <span class="meta-tag mitre">T0816 Device Restart/Shutdown</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ DAY 2 ═══ -->
+  <div class="day-header">
+    <div class="day-label">Day 2</div>
+    <div class="day-dot"></div>
+    <div class="day-line"></div>
+    <span class="badge badge-amber" style="margin-left:16px;white-space:nowrap;">9 Events</span>
+  </div>
+
+  <div class="event sev-medium" data-sev="medium" data-day="day2">
+    <div class="event-time"><span class="day-stamp">Day 2</span>T+25:00<br>2024-03-16 01:00</div>
+    <div class="event-connector"></div>
+    <div class="event-body">
+      <div class="event-kc">ICS Kill Chain: Reconnaissance</div>
+      <div class="event-top">
+        <div class="event-title">Unregistered Device Fingerprint — Unknown MAC 00:de:ad:ff:00:01</div>
+        <span class="badge sev-badge sev-MEDIUM">MEDIUM</span>
+      </div>
+      <div class="event-desc">
+        A previously unseen MAC address (<code>00:de:ad:ff:00:01</code>, IP <code>192.168.10.252</code>) appears on the OT network segment at 01:00, sending ARP requests to the gateway and 5 random PLC addresses. Device is not in the Claroty asset inventory nor the Armis device catalog. OUI prefix is unrecognized. Possible rogue device connected to a switch port, or a newly provisioned device not yet registered.
+      </div>
+      <div class="event-meta">
+        <span class="meta-tag proto">ARP</span>
+        <span class="meta-tag src">SRC: 00:de:ad:ff:00:01 (UNREGISTERED)</span>
+        <span class="meta-tag tool">Claroty: New Device Alert</span>
+        <span class="meta-tag tool">Armis: Unknown Device</span>
+        <span class="meta-tag mitre">T0845 Program Upload</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="event sev-high" data-sev="high" data-day="day2">
+    <div class="event-time"><span class="day-stamp">Day 2</span>T+27:30<br>2024-03-16 03:30</div>
+    <div class="event-connector"></div>
+    <div class="event-body">
+      <div class="event-kc">ICS Kill Chain: Reconnaissance</div>
+      <div class="event-top">
+        <div class="event-title">TCP Port Scan — ENG-WS2 Sweeping All 40 PLCs on OT Protocol Ports</div>
+        <span class="badge sev-badge sev-HIGH">HIGH</span>
+      </div>
+      <div class="event-desc">
+        ENG-WS2 (HP, 192.168.10.201) conducts a sequential TCP SYN scan targeting all 40 PLCs across 10 OT-specific ports: 102 (S7), 502 (Modbus), 2222, 4840 (OPC-UA), 20000 (DNP3), 44818 (EtherNet/IP), 47808 (BACnet), 1911, 9600, 18245. Total of 400 SYN packets in ~8 minutes. Closed ports respond with RST; open ports (502, 44818, 102) accept connections. Pattern is identical to tools like Shodan, nmap, or Redpoint ICS plugin.
+      </div>
+      <div class="event-meta">
+        <span class="meta-tag proto">TCP SYN Scan</span>
+        <span class="meta-tag src">SRC: ENG-WS2 (192.168.10.201)</span>
+        <span class="meta-tag target">TGT: All 40 PLCs — 10 OT ports</span>
+        <span class="meta-tag tool">Claroty: Port Scan Detection</span>
+        <span class="meta-tag tool">Armis: Reconnaissance Alert</span>
+        <span class="meta-tag mitre">T0846 Remote System Discovery</span>
+        <span class="meta-tag mitre">T0888 Remote Services</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="event sev-medium" data-sev="medium" data-day="day2">
+    <div class="event-time"><span class="day-stamp">Day 2</span>T+30:00<br>2024-03-16 06:00</div>
+    <div class="event-connector"></div>
+    <div class="event-body">
+      <div class="event-kc">ICS Kill Chain: Modify</div>
+      <div class="event-top">
+        <div class="event-title">Modbus FC05 Coil Write with Illegal Value 0xFF01 — PLC-01</div>
+        <span class="badge sev-badge sev-MEDIUM">MEDIUM</span>
+      </div>
+      <div class="event-desc">
+        ENG-WS1 writes Modbus FC05 (Write Single Coil) to PLC-01 with value <code>0xFF01</code>. Per the Modbus spec, valid coil values are <code>0x0000</code> (OFF) or <code>0xFF00</code> (ON); value <code>0xFF01</code> is explicitly illegal and should be rejected. PLC-01 responds with Modbus Exception 3 (Illegal Data Value). This can be indicator of fuzzing, a misconfigured SCADA system, or deliberate protocol abuse to trigger edge-case PLC firmware behavior.
+      </div>
+      <div class="event-meta">
+        <span class="meta-tag proto">Modbus/TCP FC05</span>
+        <span class="meta-tag src">SRC: ENG-WS1 (192.168.10.200)</span>
+        <span class="meta-tag target">TGT: PLC-01 (192.168.10.11)</span>
+        <span class="meta-tag tool">Claroty: Protocol Violation</span>
+        <span class="meta-tag tool">Armis: Write Anomaly</span>
+        <span class="meta-tag mitre">T0836 Modify Parameter</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="event sev-critical" data-sev="critical" data-day="day2">
+    <div class="event-time"><span class="day-stamp">Day 2</span>T+33:00<br>2024-03-16 09:00</div>
+    <div class="event-connector"></div>
+    <div class="event-body">
+      <div class="event-kc">ICS Kill Chain: Attack / Inhibit</div>
+      <div class="event-top">
+        <div class="event-title">S7comm STOP CPU Command Attempted — Siemens PLC (TCP:102)</div>
+        <span class="badge sev-badge sev-CRITICAL">CRITICAL</span>
+      </div>
+      <div class="event-desc">
+        ENG-WS1 sends an S7comm STOP CPU packet (TPKT/COTP function code <code>0x29</code>, parameter <code>0x09 P_PROGRAM</code>) to a Siemens PLC. This command would place the Siemens CPU in STOP mode, halting all ladder logic execution, de-energizing outputs, and potentially causing physical process disruption. This exact technique was used in Stuxnet and multiple ICS-targeted campaigns. Claroty issues highest-priority alert; Armis correlates with Siemens device profile and known attack signatures.
+      </div>
+      <div class="event-meta">
+        <span class="meta-tag proto">S7comm TPKT TCP:102</span>
+        <span class="meta-tag src">SRC: ENG-WS1 (192.168.10.200)</span>
+        <span class="meta-tag target">TGT: Siemens PLC (192.168.10.13)</span>
+        <span class="meta-tag tool">Claroty: CRITICAL — CPU Stop</span>
+        <span class="meta-tag tool">Armis: Known Attack Pattern</span>
+        <span class="meta-tag mitre">T0858 Change Program State</span>
+        <span class="meta-tag mitre">T0881 Service Stop</span>
+        <span class="meta-tag mitre">NERC CIP-010 R1</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="event sev-critical" data-sev="critical" data-day="day2">
+    <div class="event-time"><span class="day-stamp">Day 2</span>T+36:00<br>2024-03-16 12:00</div>
+    <div class="event-connector"></div>
+    <div class="event-body">
+      <div class="event-kc">ICS Kill Chain: Attack / Modify Config</div>
+      <div class="event-top">
+        <div class="event-title">DNP3 Cold Restart Command — Unauthorized Configuration Change on DCS-02</div>
+        <span class="badge sev-badge sev-CRITICAL">CRITICAL</span>
+      </div>
+      <div class="event-desc">
+        SCADA-SRV sends a DNP3 Function Code 13 (Cold Restart) to DCS-02 (Emerson, 192.168.10.122). Cold Restart forces the DNP3 outstation to reinitialize, dropping all communication sessions and reloading configuration from non-volatile memory. This command is legitimate for maintenance but was not scheduled and occurred during active production hours. Claroty correlates with production schedule data and flags as unplanned restart; Armis flags as unusual SCADA-originated control command.
+      </div>
+      <div class="event-meta">
+        <span class="meta-tag proto">DNP3/TCP FC13</span>
+        <span class="meta-tag src">SRC: SCADA-SRV (192.168.10.220)</span>
+        <span class="meta-tag target">TGT: DCS-02 Emerson (192.168.10.122)</span>
+        <span class="meta-tag tool">Claroty: Unplanned Restart</span>
+        <span class="meta-tag tool">Armis: Control Command Anomaly</span>
+        <span class="meta-tag mitre">T0816 Device Restart/Shutdown</span>
+        <span class="meta-tag mitre">IEC 62443: SR 3.9</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="event sev-high" data-sev="high" data-day="day2">
+    <div class="event-time"><span class="day-stamp">Day 2</span>T+38:00<br>2024-03-16 14:00</div>
+    <div class="event-connector"></div>
+    <div class="event-body">
+      <div class="event-kc">ICS Kill Chain: Availability</div>
+      <div class="event-top">
+        <div class="event-title">Simultaneous Disconnect — PLC-15 and PLC-16 Go Offline (Power Event)</div>
+        <span class="badge sev-badge sev-HIGH">HIGH</span>
+      </div>
+      <div class="event-desc">
+        PLC-15 (Rockwell, .25) and PLC-16 (Omron, .26) both disconnect within 3 seconds of each other, suggesting a shared power distribution fault, network switch port failure, or a deliberate simultaneous shutdown. Both emit TCP RSTs, then go silent for 5–8 minutes. Syslog watchdog messages from both. HMI-04 polling loops fail for both during the gap. Claroty correlates the simultaneous event and raises grouped alert for physical plant investigation.
+      </div>
+      <div class="event-meta">
+        <span class="meta-tag proto">Modbus/TCP + Syslog</span>
+        <span class="meta-tag src">PLC-15 (.25) + PLC-16 (.26)</span>
+        <span class="meta-tag tool">Claroty: Correlated Outage</span>
+        <span class="meta-tag tool">Armis: Multi-Asset Offline</span>
+        <span class="meta-tag mitre">T0816 Device Restart/Shutdown</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="event sev-high" data-sev="high" data-day="day2">
+    <div class="event-time"><span class="day-stamp">Day 2</span>T+42:00<br>2024-03-16 18:00</div>
+    <div class="event-connector"></div>
+    <div class="event-body">
+      <div class="event-kc">ICS Kill Chain: Initial Access</div>
+      <div class="event-top">
+        <div class="event-title">Rogue OPC-UA Session — Unexpected Client IP 192.168.10.253</div>
+        <span class="badge sev-badge sev-HIGH">HIGH</span>
+      </div>
+      <div class="event-desc">
+        IP <code>192.168.10.253</code> (MAC <code>00:de:ad:oc:00:01</code>, not in asset inventory) initiates an OPC-UA Hello session to PLC-06 on port 4840, identifying itself as endpoint <code>opc.tcp://192.168.10.253:4840</code>. Legitimate OPC-UA clients are the two Historians (.210, .211) only. This unauthorized OPC-UA client could be exfiltrating real-time process values or attempting to write to PLC tags. Claroty detects via OPC-UA client whitelist; Armis flags unknown device.
+      </div>
+      <div class="event-meta">
+        <span class="meta-tag proto">OPC-UA TCP:4840</span>
+        <span class="meta-tag src">SRC: 192.168.10.253 (ROGUE)</span>
+        <span class="meta-tag target">TGT: PLC-06 (192.168.10.16)</span>
+        <span class="meta-tag tool">Claroty: OPC-UA Whitelist Violation</span>
+        <span class="meta-tag tool">Armis: Unauthorized Client</span>
+        <span class="meta-tag mitre">T0852 Screen Capture</span>
+        <span class="meta-tag mitre">T0801 Monitor Process State</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="event sev-medium" data-sev="medium" data-day="day2">
+    <div class="event-time"><span class="day-stamp">Day 2</span>T+45:00<br>2024-03-16 21:00</div>
+    <div class="event-connector"></div>
+    <div class="event-body">
+      <div class="event-kc">ICS Kill Chain: Lateral Movement</div>
+      <div class="event-top">
+        <div class="event-title">SMB2 Lateral Access — ENG-WS1 to Historian-PI (Port 445)</div>
+        <span class="badge sev-badge sev-MEDIUM">MEDIUM</span>
+      </div>
+      <div class="event-desc">
+        ENG-WS1 (192.168.10.200) opens an SMB2 session to Historian-PI (192.168.10.210) on port 445. SMB is not a sanctioned protocol within the OT network segment between engineering workstations and historian servers. This access pattern can indicate attempts to access PI data archives, drop tools or malware onto the historian, or pivot to IT systems accessible from the historian DMZ. Claroty flags unexpected protocol on known asset; Armis correlates with SMB lateral movement pattern.
+      </div>
+      <div class="event-meta">
+        <span class="meta-tag proto">SMB2 TCP:445</span>
+        <span class="meta-tag src">SRC: ENG-WS1 (192.168.10.200)</span>
+        <span class="meta-tag target">TGT: Historian-PI (192.168.10.210)</span>
+        <span class="meta-tag tool">Claroty: Protocol Anomaly</span>
+        <span class="meta-tag tool">Armis: Lateral Movement</span>
+        <span class="meta-tag mitre">T0812 Default Credentials</span>
+        <span class="meta-tag mitre">T0866 Exploitation of Remote Services</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="event sev-critical" data-sev="critical" data-day="day2">
+    <div class="event-time"><span class="day-stamp">Day 2</span>T+47:00<br>2024-03-16 23:00</div>
+    <div class="event-connector"></div>
+    <div class="event-body">
+      <div class="event-kc">ICS Kill Chain: Attack / Modify</div>
+      <div class="event-top">
+        <div class="event-title">Multi-Block Firmware Write Sequence Detected — PLC-33</div>
+        <span class="badge sev-badge sev-CRITICAL">CRITICAL</span>
+      </div>
+      <div class="event-desc">
+        ENG-WS2 performs multiple sequential Modbus FC16 writes to PLC-33 (Mitsubishi, 192.168.10.43) targeting addresses 0x9000 through 0x900A — a pattern consistent with a multi-block firmware or configuration download. Each write receives an Illegal Address exception, but the sequential nature of the writes (distinct from a single accidental write) suggests automated tooling attempting to overwrite firmware segments. This is a high-confidence firmware tampering signature.
+      </div>
+      <div class="event-meta">
+        <span class="meta-tag proto">Modbus/TCP FC16 × multiple</span>
+        <span class="meta-tag src">SRC: ENG-WS2 (192.168.10.201)</span>
+        <span class="meta-tag target">TGT: PLC-33 Mitsubishi (192.168.10.43)</span>
+        <span class="meta-tag tool">Claroty: Firmware Download Pattern</span>
+        <span class="meta-tag tool">Armis: Multi-Write Anomaly</span>
+        <span class="meta-tag mitre">T0839 Module Firmware</span>
+        <span class="meta-tag mitre">NERC CIP-010 R1.1</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ DAY 3 ═══ -->
+  <div class="day-header">
+    <div class="day-label">Day 3</div>
+    <div class="day-dot"></div>
+    <div class="day-line"></div>
+    <span class="badge badge-cyan" style="margin-left:16px;white-space:nowrap;">11 Events</span>
+  </div>
+
+  <div class="event sev-high" data-sev="high" data-day="day3">
+    <div class="event-time"><span class="day-stamp">Day 3</span>T+50:00<br>2024-03-17 02:00</div>
+    <div class="event-connector"></div>
+    <div class="event-body">
+      <div class="event-kc">ICS Kill Chain: Reconnaissance</div>
+      <div class="event-top">
+        <div class="event-title">Second ARP Spoof — Different Rogue MAC Claiming PLC-11 IP</div>
+        <span class="badge sev-badge sev-HIGH">HIGH</span>
+      </div>
+      <div class="event-desc">
+        Second ARP spoofing campaign targeting PLC-11 (192.168.10.21). Rogue MAC <code>00:ba:d0:ca:fe:02</code> sends gratuitous ARP replies to 8 devices. The recurrence 49 hours after the first ARP spoof event suggests a persistent adversarial presence or automated tool running on a compromised device. Claroty correlates both events and elevates campaign confidence score. Armis updates device risk scoring for all affected assets.
+      </div>
+      <div class="event-meta">
+        <span class="meta-tag proto">ARP / L2</span>
+        <span class="meta-tag src">SRC: 00:ba:d0:ca:fe:02 (rogue)</span>
+        <span class="meta-tag target">TGT: PLC-11 (192.168.10.21)</span>
+        <span class="meta-tag tool">Claroty: Repeat ARP Spoof</span>
+        <span class="meta-tag tool">Armis: Campaign Correlation</span>
+        <span class="meta-tag mitre">T0859 Valid Accounts</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="event sev-critical" data-sev="critical" data-day="day3">
+    <div class="event-time"><span class="day-stamp">Day 3</span>T+52:00<br>2024-03-17 04:00</div>
+    <div class="event-connector"></div>
+    <div class="event-body">
+      <div class="event-kc">ICS Kill Chain: Initial Access</div>
+      <div class="event-top">
+        <div class="event-title">RDP Brute Force — 30 Failed Authentication Attempts on Jump Server</div>
+        <span class="badge sev-badge sev-CRITICAL">CRITICAL</span>
+      </div>
+      <div class="event-desc">
+        ENG-WS1 attempts 30 sequential RDP connections (TCP 3389) to JUMP-SRV (192.168.10.230). Each connection delivers an X.224 TPKT connection request followed by immediate RST from the jump server — consistent with failed pre-auth or credential rejection. The 2–8 second cadence between attempts matches automated password-spraying tools. Jump servers are high-value targets as they provide remote access pathways into the OT network from IT or external access.
+      </div>
+      <div class="event-meta">
+        <span class="meta-tag proto">RDP TCP:3389</span>
+        <span class="meta-tag src">SRC: ENG-WS1 (192.168.10.200)</span>
+        <span class="meta-tag target">TGT: JUMP-SRV (192.168.10.230)</span>
+        <span class="meta-tag tool">Claroty: RDP Brute Force</span>
+        <span class="meta-tag tool">Armis: Credential Attack</span>
+        <span class="meta-tag mitre">T0859 Valid Accounts</span>
+        <span class="meta-tag mitre">T0822 External Remote Services</span>
+        <span class="meta-tag mitre">NERC CIP-007 R5.1</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="event sev-medium" data-sev="medium" data-day="day3">
+    <div class="event-time"><span class="day-stamp">Day 3</span>T+54:30<br>2024-03-17 06:30</div>
+    <div class="event-connector"></div>
+    <div class="event-body">
+      <div class="event-kc">ICS Kill Chain: DoS</div>
+      <div class="event-top">
+        <div class="event-title">NTP Amplification-Style Flood — Oversized UDP:123 Responses (200 Packets)</div>
+        <span class="badge sev-badge sev-MEDIUM">MEDIUM</span>
+      </div>
+      <div class="event-desc">
+        Source IP <code>10.99.99.2</code> sends 200 oversized UDP packets to SCADA-SRV on port 123. Each packet is ~476 bytes (vs. 48 bytes for a legitimate NTP client request), consistent with NTP monlist amplification responses being reflected at the SCADA server. The SCADA server is not running an NTP server, making these unsolicited. This pattern may indicate a volumetric DDoS technique being tested against OT infrastructure.
+      </div>
+      <div class="event-meta">
+        <span class="meta-tag proto">NTP UDP:123</span>
+        <span class="meta-tag src">SRC: 10.99.99.2 (ROGUE)</span>
+        <span class="meta-tag target">TGT: SCADA-SRV (192.168.10.220)</span>
+        <span class="meta-tag tool">Claroty: DoS Indicator</span>
+        <span class="meta-tag tool">Armis: Network Flood</span>
+        <span class="meta-tag mitre">T0814 Denial of Service</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="event sev-high" data-sev="high" data-day="day3">
+    <div class="event-time"><span class="day-stamp">Day 3</span>T+58:00<br>2024-03-17 10:00</div>
+    <div class="event-connector"></div>
+    <div class="event-body">
+      <div class="event-kc">ICS Kill Chain: Reconnaissance</div>
+      <div class="event-top">
+        <div class="event-title">Modbus FC01 Coil Read Sweep — All 40 PLCs (Process State Recon)</div>
+        <span class="badge sev-badge sev-HIGH">HIGH</span>
+      </div>
+      <div class="event-desc">
+        ENG-WS1 systematically reads 64 coils (FC01) from all 40 PLCs sequentially. Reading coil states reveals the current on/off status of discrete outputs — motor starters, valve positions, safety relays, etc. — enabling an attacker to map the physical process state before taking action. This is operationally similar to a reconnaissance phase before targeted manipulation. Claroty detects via sequential access pattern; baseline normally shows only HMI-initiated FC03 register reads.
+      </div>
+      <div class="event-meta">
+        <span class="meta-tag proto">Modbus/TCP FC01</span>
+        <span class="meta-tag src">SRC: ENG-WS1 (192.168.10.200)</span>
+        <span class="meta-tag target">TGT: All 40 PLCs</span>
+        <span class="meta-tag tool">Claroty: Sequential Scan</span>
+        <span class="meta-tag tool">Armis: Recon Pattern</span>
+        <span class="meta-tag mitre">T0801 Monitor Process State</span>
+        <span class="meta-tag mitre">T0846 Remote System Discovery</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="event sev-medium" data-sev="medium" data-day="day3">
+    <div class="event-time"><span class="day-stamp">Day 3</span>T+60:00<br>2024-03-17 12:00</div>
+    <div class="event-connector"></div>
+    <div class="event-body">
+      <div class="event-kc">ICS Kill Chain: Impair</div>
+      <div class="event-top">
+        <div class="event-title">PLC-05 CPU Overload — HMI-02 Retry Storm (40 Timeout/RST Cycles)</div>
+        <span class="badge sev-badge sev-MEDIUM">MEDIUM</span>
+      </div>
+      <div class="event-desc">
+        HMI-02 (iFIX, 192.168.10.102) enters a retry storm against PLC-05 (Schneider, 192.168.10.15): 40 sequential connection attempts each followed by a 3-second timeout and TCP RST. PLC-05 is accepting TCP connections but not responding to Modbus requests — consistent with CPU saturation, scan cycle overrun, or a hung firmware state. Each HMI retry further stresses the PLC. Claroty correlates HMI timeout rate with PLC health metrics.
+      </div>
+      <div class="event-meta">
+        <span class="meta-tag proto">Modbus/TCP (timeouts)</span>
+        <span class="meta-tag src">HMI-02 (192.168.10.102)</span>
+        <span class="meta-tag target">TGT: PLC-05 (192.168.10.15)</span>
+        <span class="meta-tag tool">Claroty: PLC Health Alert</span>
+        <span class="meta-tag tool">Armis: Availability Degradation</span>
+        <span class="meta-tag mitre">T0814 Denial of Service</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="event sev-critical" data-sev="critical" data-day="day3">
+    <div class="event-time"><span class="day-stamp">Day 3</span>T+63:00<br>2024-03-17 15:00</div>
+    <div class="event-connector"></div>
+    <div class="event-body">
+      <div class="event-kc">ICS Kill Chain: Attack / Physical</div>
+      <div class="event-top">
+        <div class="event-title">DNP3 Control Relay Output — DCS-03 Issues Unexpected Setpoint via CROB</div>
+        <span class="badge sev-badge sev-CRITICAL">CRITICAL</span>
+      </div>
+      <div class="event-desc">
+        DCS-03 (ABB, 192.168.10.123) sends a DNP3 Direct Operate CROB (Control Relay Output Block) command to SCADA-SRV with a pulse ON/OFF duration of 500ms — an unexpected setpoint change outside of scheduled batch operations. The CROB object class 0x0C with function code 0x03 (Direct Operate) bypasses the normal select-before-operate safety interlock. If executed, this would directly energize/de-energize a field relay. Claroty marks as highest priority physical consequence alert.
+      </div>
+      <div class="event-meta">
+        <span class="meta-tag proto">DNP3/TCP FC03 CROB</span>
+        <span class="meta-tag src">SRC: DCS-03 ABB (192.168.10.123)</span>
+        <span class="meta-tag target">TGT: SCADA-SRV (192.168.10.220)</span>
+        <span class="meta-tag tool">Claroty: Physical Impact Alert</span>
+        <span class="meta-tag tool">Armis: Control Command Bypass</span>
+        <span class="meta-tag mitre">T0855 Unauthorized Command Message</span>
+        <span class="meta-tag mitre">IEC 62443: SR 3.9, SR 5.2</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="event sev-medium" data-sev="medium" data-day="day3">
+    <div class="event-time"><span class="day-stamp">Day 3</span>T+67:00<br>2024-03-17 19:00</div>
+    <div class="event-connector"></div>
+    <div class="event-body">
+      <div class="event-kc">ICS Kill Chain: Evasion</div>
+      <div class="event-top">
+        <div class="event-title">ARP IP Conflict — PLC-28 and PLC-29 Both Claim Same IP</div>
+        <span class="badge sev-badge sev-MEDIUM">MEDIUM</span>
+      </div>
+      <div class="event-desc">
+        PLC-28 (192.168.10.38) and PLC-29 (192.168.10.39) each send gratuitous ARP announcements claiming the same IP address in alternating fashion over 4 seconds. This could indicate IP address misconfiguration following a firmware update, a deliberate IP swap attack, or a cloned device. Either device may have incorrect packets routed to it, causing process data corruption. Claroty detects via ARP conflict monitor; Armis flags duplicate MAC-IP binding.
+      </div>
+      <div class="event-meta">
+        <span class="meta-tag proto">ARP Gratuitous</span>
+        <span class="meta-tag src">PLC-28 (.38) ↔ PLC-29 (.39)</span>
+        <span class="meta-tag tool">Claroty: IP Conflict</span>
+        <span class="meta-tag tool">Armis: Duplicate Binding</span>
+        <span class="meta-tag mitre">T0849 Masquerading</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="event sev-low" data-sev="low" data-day="day3">
+    <div class="event-time"><span class="day-stamp">Day 3</span>T+70:00<br>2024-03-17 22:00</div>
+    <div class="event-connector"></div>
+    <div class="event-body">
+      <div class="event-kc">ICS Kill Chain: Reconnaissance</div>
+      <div class="event-top">
+        <div class="event-title">BACnet Who-Is Broadcast Flood — 100 Packets from PLC-06</div>
+        <span class="badge sev-badge sev-LOW">LOW</span>
+      </div>
+      <div class="event-desc">
+        PLC-06 (Schneider, 192.168.10.16) broadcasts 100 BACnet Who-Is (BVLC) packets to the subnet broadcast address 192.168.10.255 on UDP 47808. BACnet is a building automation protocol not native to this manufacturing environment. This cross-segment broadcast flood can be used to discover BACnet devices (HVAC, access control) that may share the OT network segment, or may indicate a compromised PLC running unexpected services.
+      </div>
+      <div class="event-meta">
+        <span class="meta-tag proto">BACnet UDP:47808</span>
+        <span class="meta-tag src">SRC: PLC-06 (192.168.10.16)</span>
+        <span class="meta-tag target">TGT: Subnet broadcast</span>
+        <span class="meta-tag tool">Claroty: Unexpected Protocol</span>
+        <span class="meta-tag tool">Armis: Cross-Protocol Recon</span>
+        <span class="meta-tag mitre">T0846 Remote System Discovery</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="event sev-low" data-sev="low" data-day="day3">
+    <div class="event-time"><span class="day-stamp">Day 3</span>T+72:00<br>2024-03-18 00:00</div>
+    <div class="event-connector"></div>
+    <div class="event-body">
+      <div class="event-kc">ICS Kill Chain: Impact</div>
+      <div class="event-top">
+        <div class="event-title">PLC-40 Goes Permanently Offline — No Reconnect Within Capture Window</div>
+        <span class="badge sev-badge sev-LOW">LOW</span>
+      </div>
+      <div class="event-desc">
+        PLC-40 (Mitsubishi, 192.168.10.50) disconnects at the very end of the 72-hour capture window and does not reconnect before the capture ends. No syslog event is emitted (unusual — prior disconnects did emit syslog). HMI polling timeouts accumulate. Whether this represents a planned end-of-capture shutdown, a hardware failure, or a persistent compromise preventing reconnect cannot be determined from the PCAP alone. Recommend physical inspection.
+      </div>
+      <div class="event-meta">
+        <span class="meta-tag proto">Modbus/TCP (absence)</span>
+        <span class="meta-tag src">PLC-40 (192.168.10.50)</span>
+        <span class="meta-tag tool">Claroty: Prolonged Unavailability</span>
+        <span class="meta-tag tool">Armis: Asset Lost</span>
+        <span class="meta-tag mitre">T0816 Device Restart/Shutdown</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Continuous baseline anomalies -->
+  <div class="event sev-low" data-sev="low" data-day="day1 day2 day3">
+    <div class="event-time"><span class="day-stamp">All Days</span>Ongoing<br>~every 90s</div>
+    <div class="event-connector"></div>
+    <div class="event-body">
+      <div class="event-kc">ICS Kill Chain: Monitor</div>
+      <div class="event-top">
+        <div class="event-title">Intermittent Saturated Register Values (0xFFFF) — Process Alarms</div>
+        <span class="badge sev-badge sev-INFO">INFO</span>
+      </div>
+      <div class="event-desc">
+        Throughout the capture, random PLCs occasionally return Modbus holding register values of <code>0xFFFF</code> (sensor saturation / out-of-range). Approximately 1.5% of all FC03 responses contain at least one saturated register. Individual events are low-severity (process alarm), but aggregate patterns could indicate systematic sensor manipulation or physical process drift. Claroty tracks via process value anomaly detection; Armis correlates with device health baselines.
+      </div>
+      <div class="event-meta">
+        <span class="meta-tag proto">Modbus/TCP FC03</span>
+        <span class="meta-tag tool">Claroty: Process Value Anomaly</span>
+        <span class="meta-tag tool">Armis: Health Baseline Drift</span>
+        <span class="meta-tag mitre">T0836 Modify Parameter</span>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /timeline -->
+
+<!-- NETWORK MAPPING -->
+<div class="section-header">
+  <h2>ICS ATT&amp;CK Technique Coverage</h2>
+  <div class="section-line"></div>
+</div>
+<div class="legend-grid">
+  <div class="legend-card">
+    <div class="legend-title">Initial Access</div>
+    <ul class="legend-items">
+      <li>T0859 Valid Accounts (ARP spoof, RDP brute)</li>
+      <li>T0822 External Remote Services (Jump server)</li>
+      <li>T0866 Exploitation of Remote Services</li>
+    </ul>
+  </div>
+  <div class="legend-card">
+    <div class="legend-title">Execution</div>
+    <ul class="legend-items">
+      <li>T0858 Change Program State (S7 STOP CPU)</li>
+      <li>T0836 Modify Parameter (coil writes, FC16)</li>
+      <li>T0855 Unauthorized Command Message (DNP3 CROB)</li>
+    </ul>
+  </div>
+  <div class="legend-card">
+    <div class="legend-title">Discovery / Recon</div>
+    <ul class="legend-items">
+      <li>T0846 Remote System Discovery (port scan, FC43)</li>
+      <li>T0801 Monitor Process State (FC01 sweep, OPC-UA)</li>
+      <li>T0888 Remote Services enumeration</li>
+    </ul>
+  </div>
+  <div class="legend-card">
+    <div class="legend-title">Lateral Movement</div>
+    <ul class="legend-items">
+      <li>T0812 Default Credentials (SMB, EtherNet/IP)</li>
+      <li>T0849 Masquerading (ARP spoof, IP conflict)</li>
+      <li>PLC-to-PLC Modbus (east-west)</li>
+    </ul>
+  </div>
+  <div class="legend-card">
+    <div class="legend-title">Impact / Inhibit</div>
+    <ul class="legend-items">
+      <li>T0816 Device Restart/Shutdown (watchdog resets)</li>
+      <li>T0814 Denial of Service (ICMP/NTP flood, storms)</li>
+      <li>T0839 Module Firmware (FC16 0x9000 writes)</li>
+    </ul>
+  </div>
+  <div class="legend-card">
+    <div class="legend-title">Compliance Triggers</div>
+    <ul class="legend-items">
+      <li>NERC CIP-007 R5 (auth failures)</li>
+      <li>NERC CIP-010 R1 (firmware change)</li>
+      <li>IEC 62443 SR 1.1 (identity &amp; authentication)</li>
+      <li>IEC 62443 SR 3.9 / SR 5.2 (control integrity)</li>
+      <li>IEC 62443 SR 7.1 (DoS resistance)</li>
+    </ul>
+  </div>
+</div>
+
+<!-- USAGE NOTES -->
+<div class="section-header">
+  <h2>Generator Usage &amp; Sizing Guide</h2>
+  <div class="section-line"></div>
+</div>
+<table class="proto-table" style="margin-bottom:52px">
+  <thead>
+    <tr><th>Configuration</th><th>Command</th><th>Est. Size</th><th>Est. Runtime</th><th>Notes</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>3-day single file</td><td class="mono">python3 generate_ot_large.py --days 3</td><td>~800 GB</td><td>6–18 hours</td><td>Default settings, SSD recommended</td></tr>
+    <tr><td>3-day chunked</td><td class="mono">--days 3 --chunk-hours 6</td><td>12 × ~67 GB</td><td>6–18 hours</td><td>Safer for storage / upload</td></tr>
+    <tr><td>5-day capture</td><td class="mono">--days 5 --chunk-hours 6</td><td>~1.35 TB</td><td>10–30 hours</td><td>All 37 anomaly events included</td></tr>
+    <tr><td>Quick validation</td><td class="mono">--days 1 --out test.pcap</td><td>~270 GB</td><td>2–6 hours</td><td>Day 1 anomalies only</td></tr>
+    <tr><td>Tune for 25 Mbps</td><td colspan="4">Set MODBUS_INTERVAL=2, PROFINET_INTERVAL=1 (default). To increase: lower intervals or add SCADA→PLC loop.</td></tr>
+  </tbody>
+</table>
+
+<!-- FOOTER -->
+<footer>
+  <div>Generated: 2024-03-18 · OT PCAP Generator v2.0</div>
+  <div>40 PLCs · 10 HMIs · 4 DCS · 2 ENG · 2 Historians · 1 SCADA · 1 Jump</div>
+  <div>Protocols: Modbus · EtherNet/IP · S7comm · DNP3 · OPC-UA · PROFINET · BACnet · SMB · RDP · NTP · Syslog</div>
+  <div>Claroty xDome · Armis Centrix · ICS ATT&amp;CK · NERC CIP · IEC 62443</div>
+</footer>
+
+</div><!-- /wrap -->
+
+<script>
+function filterEvents(type, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  document.querySelectorAll('.event').forEach(ev => {
+    const sev  = ev.dataset.sev;
+    const day  = ev.dataset.day || '';
+    let show   = false;
+
+    if (type === 'all')      show = true;
+    else if (type === 'critical') show = sev === 'critical';
+    else if (type === 'high')     show = sev === 'high';
+    else if (type === 'medium')   show = sev === 'medium';
+    else if (type === 'low')      show = sev === 'low' || sev === 'info';
+    else if (type === 'day1')     show = day.includes('day1');
+    else if (type === 'day2')     show = day.includes('day2');
+    else if (type === 'day3')     show = day.includes('day3');
+
+    ev.classList.toggle('hidden', !show);
+  });
+}
+</script>
+</body>
+</html>
